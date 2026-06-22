@@ -9,7 +9,6 @@ import { LucideIcon } from './LucideIcon';
 import { VisualEffects } from './VisualEffects';
 import { VisualBeat } from './VisualBeat';
 import { motion, AnimatePresence } from 'motion/react';
-import { readJson, writeJson } from '../utils/storage';
 
 interface PlayScreenProps {
   space: Space;
@@ -73,7 +72,7 @@ export const PlayScreen: React.FC<PlayScreenProps> = ({
   const activeAmbients = ambientSounds.filter(sound => sound.isPlaying);
 
   useEffect(() => {
-    const favorites = readJson<string[]>('saved_space_favorites', []);
+    const favorites = JSON.parse(localStorage.getItem('saved_space_favorites') || '[]');
     setFavorite(favorites.includes(space.id));
   }, [space.id]);
 

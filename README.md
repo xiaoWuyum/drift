@@ -1,11 +1,12 @@
-﻿# Drift
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+</div>
 
-A Vite + React + TypeScript ambient music prototype.
+# Run and deploy your AI Studio app
 
-## Prerequisites
+This contains everything you need to run your app locally.
 
-- Node.js 20 or newer
-- npm
+View your app in AI Studio: https://ai.studio/apps/2f9ee99d-453a-4f72-8dd1-ba14b6c8c4a2
 
 ## Run Locally
 

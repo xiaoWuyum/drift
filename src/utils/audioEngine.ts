@@ -727,7 +727,7 @@ export class AudioEngine {
       
       // Determine what chord to play (every 16 steps/1 bar represents 1 chord)
       const barIdx = Math.floor(stepIdx / 16);
-      const chordsAvailable = this.CHORDS[fallbackSongId] || [];
+      const chordsAvailable = this.CHORDS[songId] || [];
       const currentChord = chordsAvailable[barIdx % chordsAvailable.length];
       
       // Every 1 bar, play a soft Rhodes chord
@@ -752,10 +752,10 @@ export class AudioEngine {
       }
 
       // Check for lead melody note
-      const melodyAvailable = this.MELODIES[fallbackSongId] || {};
+      const melodyAvailable = this.MELODIES[songId] || {};
       const melodyNote = melodyAvailable[stepIdx];
       if (melodyNote) {
-        const instrument = (fallbackSongId === 'season') ? 'guitar' : 'rhodes';
+        const instrument = (songId === 'season') ? 'guitar' : 'rhodes';
         this.synthesizePianoLead(melodyNote, 0.28, 0.8, instrument);
       }
 

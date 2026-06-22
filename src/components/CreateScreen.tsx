@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -437,4 +437,3 @@ export const CreateScreen: React.FC<CreateScreenProps> = ({
     </div>
   );
 };
-
