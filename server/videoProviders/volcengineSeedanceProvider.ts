@@ -75,8 +75,20 @@ export class VolcengineSeedanceProvider implements VideoProvider {
   }
 
   async createVideo(input: VideoGenerationInput): Promise<VideoGenerationJob> {
-    if (!input.imageUrl) {
-      throw new Error('Seedance image-to-video requires imageUrl');
+    const content: Array<Record<string, unknown>> = [
+      {
+        type: 'text',
+        text: `${input.prompt} --duration ${this.duration} --camerafixed ${this.cameraFixed} --watermark ${this.watermark}`,
+      },
+    ];
+
+    if (input.imageUrl) {
+      content.push({
+        type: 'image_url',
+        image_url: {
+          url: input.imageUrl,
+        },
+      });
     }
 
     const response = await fetch(`${this.baseUrl}/contents/generations/tasks`, {
@@ -87,18 +99,7 @@ export class VolcengineSeedanceProvider implements VideoProvider {
       },
       body: JSON.stringify({
         model: this.model,
-        content: [
-          {
-            type: 'text',
-            text: `${input.prompt} --duration ${this.duration} --camerafixed ${this.cameraFixed} --watermark ${this.watermark}`,
-          },
-          {
-            type: 'image_url',
-            image_url: {
-              url: input.imageUrl,
-            },
-          },
-        ],
+        content,
       }),
     });
 

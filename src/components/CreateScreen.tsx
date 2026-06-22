@@ -17,56 +17,7 @@ interface CreateScreenProps {
   onCreateSpace: (space: Space) => void;
 }
 
-const PRESET_WALLPAPERS = [
-  {
-    id: 'cyberpunk',
-    name: '赛博大厦',
-    prompt: 'A futuristic cyber apartment',
-    url: 'https://images.unsplash.com/photo-1545239351-ef35f43d514b?w=420&auto=format&fit=crop&q=80',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-futuristic-subway-station-with-neon-lights-44133-large.mp4',
-    tag: '赛博 · 夜'
-  },
-  {
-    id: 'cabin',
-    name: '林中壁炉',
-    prompt: 'A cozy forest cabin with crackling fireplace',
-    url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=420&auto=format&fit=crop&q=80',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-fireplace-burning-with-bright-fire-in-dark-cozy-room-41604-large.mp4',
-    tag: '治愈 · 暖'
-  },
-  {
-    id: 'space',
-    name: '幽深太空',
-    prompt: 'Surreal cosmic stars',
-    url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=420&auto=format&fit=crop&q=80',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-stars-in-space-background-1611-large.mp4',
-    tag: '冥想 · 深'
-  },
-  {
-    id: 'beach',
-    name: '梦幻海滩',
-    prompt: 'Bright tropical ocean beach shore',
-    url: 'https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=420&auto=format&fit=crop&q=80',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-top-view-of-waves-crashing-on-a-beach-46014-large.mp4',
-    tag: '治愈 · 海'
-  },
-  {
-    id: 'rainforest',
-    name: '雨中秘境',
-    prompt: 'Lush magical green rain forest at dawn',
-    url: 'https://images.unsplash.com/photo-1511497584788-876760111969?w=420&auto=format&fit=crop&q=80',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-forest-stream-in-the-sunlight-41864-large.mp4',
-    tag: '幽静 · 静'
-  },
-  {
-    id: 'snowpeak',
-    name: '雪山营火',
-    prompt: 'Majestic snowy mountain ridge tents campfire',
-    url: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=420&auto=format&fit=crop&q=80',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-snow-falling-decorating-coniferous-trees-in-a-forest-44111-large.mp4',
-    tag: '治愈 · 寒'
-  }
-];
+const DEFAULT_SCENE_IMAGE = 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=1200&auto=format&fit=crop&q=80';
 
 export const CreateScreen: React.FC<CreateScreenProps> = ({
   songs,
@@ -86,7 +37,6 @@ export const CreateScreen: React.FC<CreateScreenProps> = ({
   const [title, setTitle] = useState('');
   const [selectedTag, setSelectedTag] = useState('治愈 · 暖');
   const [selectedSongId, setSelectedSongId] = useState(songs[0].id);
-  const [selectedBgId, setSelectedBgId] = useState(PRESET_WALLPAPERS[0].id);
   const [createdList, setCreatedList] = useState<AmbientSound[]>(
     ambientSounds.map(s => ({ ...s, volume: 40, isPlaying: s.id === 'rain' }))
   );
@@ -109,7 +59,6 @@ export const CreateScreen: React.FC<CreateScreenProps> = ({
         const recommendation = await getSceneRecommendation(userInput, songs);
 
         // Apply state updates simulating immediate smart layout creation
-        setSelectedBgId(recommendation.backgroundId);
         setSelectedTag(recommendation.tag);
         setSelectedSongId(recommendation.songId);
         setTitle(recommendation.title);
@@ -165,7 +114,6 @@ export const CreateScreen: React.FC<CreateScreenProps> = ({
   const handleGenerateVideo = async () => {
     const prompt = videoPrompt || enhancedPrompt;
     if (!prompt.trim()) return;
-    const bgChoice = PRESET_WALLPAPERS.find(p => p.id === selectedBgId) || PRESET_WALLPAPERS[0];
 
     setIsGeneratingVideo(true);
     setVideoError('');
@@ -174,7 +122,6 @@ export const CreateScreen: React.FC<CreateScreenProps> = ({
     try {
       const job = await requestVideoGeneration({
         prompt,
-        imageUrl: bgChoice.url,
       });
       setVideoJob(job);
 
@@ -212,9 +159,10 @@ export const CreateScreen: React.FC<CreateScreenProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-
-    const bgChoice = PRESET_WALLPAPERS.find(p => p.id === selectedBgId) || PRESET_WALLPAPERS[0];
-    const finalVideoUrl = generatedVideoUrl || bgChoice.videoUrl;
+    if (!generatedVideoUrl) {
+      setVideoError('请先生成视频，再发布场景。');
+      return;
+    }
 
     const activeAtmosphereMix = createdList
       .filter(s => s.isPlaying)
@@ -226,8 +174,8 @@ export const CreateScreen: React.FC<CreateScreenProps> = ({
       tag: selectedTag,
       creator: 'Sx (我)',
       creatorAvatar: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=creator',
-      bgImage: bgChoice.url,
-      videoUrl: finalVideoUrl,
+      bgImage: DEFAULT_SCENE_IMAGE,
+      videoUrl: generatedVideoUrl,
       ambientSounds: activeAtmosphereMix.length > 0 ? activeAtmosphereMix : [{ soundId: 'rain', volume: 50 }],
       defaultSongId: selectedSongId,
       description: enhancedPrompt 
@@ -434,45 +382,7 @@ export const CreateScreen: React.FC<CreateScreenProps> = ({
           </div>
         </div>
 
-        {/* 3. Base Background Wallpaper Preset Select */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">背景映像 preset</label>
-          <div className="grid grid-cols-3 gap-2">
-            {PRESET_WALLPAPERS.map(preset => (
-              <div 
-                key={preset.id}
-                onClick={() => {
-                  setSelectedBgId(preset.id);
-                  // auto set tag for matching theme
-                  setSelectedTag(preset.tag);
-                }}
-                className={`relative h-20 rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${
-                  selectedBgId === preset.id 
-                    ? 'border-cyan-400 scale-95 shadow-lg shadow-cyan-500/10' 
-                    : 'border-zinc-800 opacity-60 hover:opacity-100'
-                }`}
-              >
-                <img 
-                  src={preset.url} 
-                  alt={preset.name} 
-                  className="absolute inset-0 w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 bg-black/40" />
-                <span className="absolute bottom-1.5 left-1.5 right-1.5 text-[9px] text-white font-bold tracking-wider truncate text-center bg-black/50 py-0.5 rounded-md leading-none">
-                  {preset.name}
-                </span>
-                {selectedBgId === preset.id && (
-                  <div className="absolute top-1 right-1 w-3 h-3 bg-cyan-400 rounded-full flex items-center justify-center">
-                    <LucideIcon name="Check" className="text-black" size={8} />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 4. Select default theme song */}
+        {/* 3. Select default theme song */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">默认主题音乐 (陶喆 经典合辑)</label>
           <select 
