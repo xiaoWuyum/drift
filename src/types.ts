@@ -20,7 +20,6 @@ export interface Song {
   genre: string;
   notes: string;
   duration: number; // in seconds
-  audioUrl?: string; // Optional local MP3 file served from public/audio
   notesSequence?: string[]; // Synthesized notes for player
 }
 

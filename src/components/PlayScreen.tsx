@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -9,7 +9,6 @@ import { LucideIcon } from './LucideIcon';
 import { VisualEffects } from './VisualEffects';
 import { VisualBeat } from './VisualBeat';
 import { motion, AnimatePresence } from 'motion/react';
-import { readJson, writeJson } from '../utils/storage';
 
 interface PlayScreenProps {
   space: Space;
@@ -39,39 +38,39 @@ interface PlaylistItem {
 const PLAYLISTS: PlaylistItem[] = [
   {
     id: 'favs',
-    title: '华语 R&B',
+    title: '喜爱歌曲',
     image: '',
-    songs: ['ordinary_friends', 'airport_1030', 'hongdou'],
-    tag: 'Chinese R&B',
+    songs: ['simple', 'beach'],
+    tag: '喜爱歌曲',
     isSpecialStar: true
   },
   {
-    id: 'pop',
-    title: 'Pop Icons',
+    id: 'english',
+    title: 'English',
     image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    songs: ['billie_jean', 'how_sweet'],
-    tag: 'Pop'
+    songs: ['melody', 'season'],
+    tag: 'English'
   },
   {
     id: 'kpop',
-    title: 'K-Pop',
+    title: 'kpop',
     image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    songs: ['how_sweet'],
-    tag: 'K-Pop'
+    songs: ['putong', 'melody'],
+    tag: 'kpop'
   },
   {
-    id: 'indie',
-    title: 'Indie Night',
+    id: 'ktv',
+    title: 'ktv',
     image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=150&auto=format&fit=crop&q=80',
-    songs: ['xiaoban', 'hongdou'],
-    tag: 'Indie'
+    songs: ['melody', 'simple'],
+    tag: 'ktv'
   },
   {
-    id: 'city',
-    title: 'City Drive',
+    id: 'rnb',
+    title: 'rnb',
     image: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=150&auto=format&fit=crop&q=80',
-    songs: ['not_like_us', 'airport_1030', 'ordinary_friends', 'billie_jean'],
-    tag: 'City'
+    songs: ['putong', 'season', 'beach'],
+    tag: 'rnb'
   }
 ];
 
@@ -90,7 +89,7 @@ export const PlayScreen: React.FC<PlayScreenProps> = ({
   onSelectSong,
   onClose,
 }) => {
-  const [activePlaylistId, setActivePlaylistId] = useState<string>('city');
+  const [activePlaylistId, setActivePlaylistId] = useState<string>('rnb');
   const [showMixer, setShowMixer] = useState<boolean>(true);
   const [favorite, setFavorite] = useState<boolean>(false);
   const [sleepTimer, setSleepTimer] = useState<number | null>(null); // minutes
@@ -100,12 +99,12 @@ export const PlayScreen: React.FC<PlayScreenProps> = ({
 
   // Sync favorites of current space
   useEffect(() => {
-    const favorites = readJson<string[]>('saved_space_favorites', []);
+    const favorites = JSON.parse(localStorage.getItem('saved_space_favorites') || '[]');
     setFavorite(favorites.includes(space.id));
   }, [space.id]);
 
   const toggleFavorite = () => {
-    const favorites = readJson<string[]>('saved_space_favorites', []);
+    const favorites = JSON.parse(localStorage.getItem('saved_space_favorites') || '[]');
     let updated: string[];
     if (favorites.includes(space.id)) {
       updated = favorites.filter((id: string) => id !== space.id);
@@ -114,7 +113,7 @@ export const PlayScreen: React.FC<PlayScreenProps> = ({
       updated = [...favorites, space.id];
       setFavorite(true);
     }
-    writeJson('saved_space_favorites', updated);
+    localStorage.setItem('saved_space_favorites', JSON.stringify(updated));
   };
 
   // Sleep Timer countdown
@@ -275,6 +274,9 @@ export const PlayScreen: React.FC<PlayScreenProps> = ({
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         referrerPolicy="no-referrer"
                       />
+                      {pl.id === 'ktv' && (
+                        <span className="absolute top-1 left-1 px-1 py-[1.5px] text-[7px] font-bold bg-black/60 rounded text-center leading-none text-yellow-400 border border-yellow-500/20">ktv</span>
+                      )}
                     </div>
                   )}
 
@@ -550,4 +552,3 @@ export const PlayScreen: React.FC<PlayScreenProps> = ({
     </div>
   );
 };
-

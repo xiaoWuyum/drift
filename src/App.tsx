@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -13,7 +13,6 @@ import { PlayScreen } from './components/PlayScreen';
 import { CreateScreen } from './components/CreateScreen';
 import { ProfileScreen } from './components/ProfileScreen';
 import { motion, AnimatePresence } from 'motion/react';
-import { readJson, readNumber, removeStoredValue, writeJson, writeNumber } from './utils/storage';
 
 type TabType = 'plaza' | 'play' | 'create' | 'profile';
 
@@ -24,7 +23,7 @@ export default function App() {
   
   // Custom states
   const [activeSpace, setActiveSpace] = useState<Space | null>(null);
-  const [activeSongId, setActiveSongId] = useState<string>(SONGS[0].id);
+  const [activeSongId, setActiveSongId] = useState<string>('putong');
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [songVolume, setSongVolume] = useState<number>(60);
   const [ambientList, setAmbientList] = useState<AmbientSound[]>(AMBIENT_SOUNDS);
@@ -34,7 +33,8 @@ export default function App() {
 
   // Load spaces on initialization
   useEffect(() => {
-    const custom_spaces = readJson<Space[]>('custom_created_spaces', []);
+    const list_stored = localStorage.getItem('custom_created_spaces');
+    const custom_spaces = list_stored ? JSON.parse(list_stored) : [];
     setSpaces([...DEFAULT_SPACES, ...custom_spaces]);
     
     // Default active space to High rise apartment
@@ -59,8 +59,8 @@ export default function App() {
   useEffect(() => {
     if (!isPlaying) return;
     const statsInterval = setInterval(() => {
-      const current = readNumber('user_listening_seconds', 0);
-      writeNumber('user_listening_seconds', current + 1);
+      const current = parseInt(localStorage.getItem('user_listening_seconds') || '0');
+      localStorage.setItem('user_listening_seconds', (current + 1).toString());
     }, 1000);
     return () => clearInterval(statsInterval);
   }, [isPlaying]);
@@ -101,14 +101,13 @@ export default function App() {
     setActiveSpace(space);
     setActiveSongId(space.defaultSongId);
     syncSpaceAtmosphere(space);
-    const targetSong = SONGS.find(s => s.id === space.defaultSongId) || SONGS[0];
     
     // Automatically boot procedural player
     if (!wasPlaying) {
       setIsPlaying(true);
-      AudioEngine.playSong(space.defaultSongId, targetSong.audioUrl);
+      AudioEngine.playSong(space.defaultSongId);
     } else {
-      AudioEngine.playSong(space.defaultSongId, targetSong.audioUrl);
+      AudioEngine.playSong(space.defaultSongId);
     }
     
     // Fire up active synthe sounds
@@ -117,6 +116,7 @@ export default function App() {
     });
 
     // Write play footprint record
+    const targetSong = SONGS.find(s => s.id === space.defaultSongId) || SONGS[0];
     const newRecord: HistoryRecord = {
       id: `history_${Date.now()}`,
       spaceId: space.id,
@@ -126,8 +126,9 @@ export default function App() {
       playedAt: new Date().toISOString(),
       duration: 180
     };
-    const parsedHist = readJson<HistoryRecord[]>('saved_play_history', []);
-    writeJson('saved_play_history', [...parsedHist, newRecord]);
+    const storedHist = localStorage.getItem('saved_play_history');
+    const parsedHist = storedHist ? JSON.parse(storedHist) : [];
+    localStorage.setItem('saved_play_history', JSON.stringify([...parsedHist, newRecord]));
 
     // Open active fullscreen player
     setActiveTab('play');
@@ -153,8 +154,7 @@ export default function App() {
     } else {
       // Play
       setIsPlaying(true);
-      const activeSong = SONGS.find(s => s.id === activeSongId);
-      AudioEngine.playSong(activeSongId, activeSong?.audioUrl);
+      AudioEngine.playSong(activeSongId);
       // turn on active synthe elements
       ambientList.forEach(async (sound) => {
         if (sound.isPlaying) {
@@ -204,16 +204,16 @@ export default function App() {
   const handleSelectSong = (songId: string) => {
     setActiveSongId(songId);
     if (isPlaying) {
-      const selectedSong = SONGS.find(s => s.id === songId);
-      AudioEngine.playSong(songId, selectedSong?.audioUrl);
+      AudioEngine.playSong(songId);
     }
   };
 
   // Creation callback
   const handleCreateSpace = (newSpace: Space) => {
-    const currentList = readJson<Space[]>('custom_created_spaces', []);
+    const list_stored = localStorage.getItem('custom_created_spaces');
+    const currentList = list_stored ? JSON.parse(list_stored) : [];
     const updated = [...currentList, newSpace];
-    writeJson('custom_created_spaces', updated);
+    localStorage.setItem('custom_created_spaces', JSON.stringify(updated));
     setSpaces([...DEFAULT_SPACES, ...updated]);
     
     // Navigate back to listing page to spotlight discovery
@@ -221,14 +221,15 @@ export default function App() {
   };
 
   const handleDeleteCustomSpace = (spaceId: string) => {
-    const currentList = readJson<Space[]>('custom_created_spaces', []);
+    const list_stored = localStorage.getItem('custom_created_spaces');
+    const currentList = list_stored ? JSON.parse(list_stored) : [];
     const updated = currentList.filter((s: Space) => s.id !== spaceId);
-    writeJson('custom_created_spaces', updated);
+    localStorage.setItem('custom_created_spaces', JSON.stringify(updated));
     setSpaces([...DEFAULT_SPACES, ...updated]);
   };
 
   const handleClearHistory = () => {
-    removeStoredValue('saved_play_history');
+    localStorage.removeItem('saved_play_history');
     // reload spaces state list to force footprint redraw
     setSpaces(p => [...p]);
   };
@@ -383,4 +384,3 @@ export default function App() {
     </div>
   );
 }
-
