@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Space, Song, AmbientSound } from '../types';
 import { LucideIcon } from './LucideIcon';
 import { motion, AnimatePresence } from 'motion/react';
+import { RECOMMENDER_LOGS, SCENE_TAGS, recommendScene } from '../utils/sceneRecommender';
 
 interface CreateScreenProps {
   songs: Song[];
@@ -84,90 +85,35 @@ export const CreateScreen: React.FC<CreateScreenProps> = ({
   );
   const [success, setSuccess] = useState(false);
 
-  const TAGS = ['治愈 · 暖', '赛博 · 夜', '冥想 · 深', '治愈 · 海', '幽静 · 静', '白噪 · 眠'];
-
   // AI Prompt expansion engine simulation matching user's exact three-tier logic
   const handleAIEnhance = () => {
     if (!userInput.trim()) return;
     setIsGenerating(true);
     setGenLogs([]);
     
-    const logs = [
-      '⚡ [PROMPT ENGINE] 唤醒 Prompt 增强层...',
-      '🎨 [VISION COG] 正在转译词法为电影级 3D 循环画幅 (Seamless Loop) 构图...',
-      '🎵 [ACOUSTIC COG] 分析空间音频构成: 映射远景 (城市/车流/太空深空) 中景 (风雨声) 及近景 (壁炉/空调/白噪音)',
-      '✨ [SPATIAL DESCRIPTOR] 场景配器与参数标定完成，正应用至 Scene Studio!'
-    ];
-
     let logIndex = 0;
     const interval = setInterval(() => {
-      if (logIndex < logs.length) {
-        setGenLogs(prev => [...prev, logs[logIndex]]);
+      if (logIndex < RECOMMENDER_LOGS.length) {
+        setGenLogs(prev => [...prev, RECOMMENDER_LOGS[logIndex]]);
         logIndex++;
       } else {
         clearInterval(interval);
         
-        // Analyze keyword mapping
-        const text = userInput.toLowerCase();
-        let bgId = 'cabin';
-        let tag = '治愈 · 暖';
-        let matchedPrompt = '';
-        let matchedTitle = userInput.trim().slice(0, 10);
-        let defaultSong = songs[0].id; // default
-        let activeSounds: { [key: string]: number } = {};
-
-        if (text.includes('赛博') || text.includes('合成') || text.includes('都市') || text.includes('霓虹') || text.includes('公寓') || text.includes('城市')) {
-          bgId = 'cyberpunk';
-          tag = '赛博 · 夜';
-          matchedPrompt = 'Cyberpunk Tokyo cityscape, ultra-high floor apartment interior, floor-to-ceiling windows, rain streaking down glass, neon reflections, cinematic depth of field, blue-purple color grade, ambient motion only, 8k resolution, seamless looping background.';
-          defaultSong = songs.find(s => s.id === 'ordinary_friends')?.id || songs[0].id;
-          activeSounds = { rain: 60, static: 45 };
-        } else if (text.includes('雨') || text.includes('林') || text.includes('树') || text.includes('绿') || text.includes('森林') || text.includes('自然')) {
-          bgId = 'rainforest';
-          tag = '幽静 · 静';
-          matchedPrompt = 'Lush magical emerald rain forest at dawn, rain filtering through dense wet canopy, soft mist arising from mossy rocks, extremely healing visual, camera fixed slow visual sway, highly detailed realistic loop.';
-          defaultSong = songs.find(s => s.id === 'xiaoban')?.id || songs[0].id;
-          activeSounds = { rain: 80, wind: 30 };
-        } else if (text.includes('银河') || text.includes('宇') || text.includes('星') || text.includes('暗') || text.includes('太空') || text.includes('科幻')) {
-          bgId = 'space';
-          tag = '冥想 · 深';
-          matchedPrompt = 'Panoramic majestic view of spiral stellar galaxy from a quiet observation viewport, shimmering stars, cosmic dust gas swirling slowly, high-fidelity dark cosmic space travel mood, seamless drift loop.';
-          defaultSong = songs.find(s => s.id === 'how_sweet')?.id || songs[0].id;
-          activeSounds = { space: 70, static: 25 };
-        } else if (text.includes('海') || text.includes('浪') || text.includes('沙滩') || text.includes('椰') || text.includes('岛') || text.includes('晴')) {
-          bgId = 'beach';
-          tag = '治愈 · 海';
-          matchedPrompt = 'Cozy coastal sun lounger under palm shadows, azure ocean waves washing onto clean white warm sand, gentle tropical sunset sky, slow-motion loop of realistic dynamic marine horizon.';
-          defaultSong = songs.find(s => s.id === 'hongdou')?.id || songs[0].id;
-          activeSounds = { waves: 75, wind: 35 };
-        } else if (text.includes('雪') || text.includes('冬') || text.includes('寒') || text.includes('冰') || text.includes('冷')) {
-          bgId = 'snowpeak';
-          tag = '治愈 · 寒';
-          matchedPrompt = 'Spectacular snow-covered pine ridge peaks at dusk, warm flickering canvas tents with gold cozy ambient fire light glowing inside, faint smoke rising, pristine cold air environment, slow realistic loop.';
-          defaultSong = songs.find(s => s.id === 'xiaoban')?.id || songs[0].id;
-          activeSounds = { fire: 65, wind: 55 };
-        } else {
-          // Default: Cabin
-          bgId = 'cabin';
-          tag = '治愈 · 暖';
-          matchedPrompt = 'Quiet mountainside timber lodge interior, glowing brick fireplace logs crackling gently, warm golden volumetric light streaming, steaming herbal tea cup on wood table window sill, heavy rain outside.';
-          defaultSong = songs.find(s => s.id === 'airport_1030')?.id || songs[0].id;
-          activeSounds = { fire: 70, crickets: 45, rain: 40 };
-        }
+        const recommendation = recommendScene(userInput, songs);
 
         // Apply state updates simulating immediate smart layout creation
-        setSelectedBgId(bgId);
-        setSelectedTag(tag);
-        setSelectedSongId(defaultSong);
-        setTitle(matchedTitle);
-        setEnhancedPrompt(matchedPrompt);
+        setSelectedBgId(recommendation.backgroundId);
+        setSelectedTag(recommendation.tag);
+        setSelectedSongId(recommendation.songId);
+        setTitle(recommendation.title);
+        setEnhancedPrompt(`${recommendation.prompt}\n\n推荐原因：${recommendation.reason}`);
         
         // Setup initial sound mixes
         setCreatedList(prev => 
           prev.map(sound => ({
             ...sound,
-            isPlaying: activeSounds[sound.id] !== undefined,
-            volume: activeSounds[sound.id] !== undefined ? activeSounds[sound.id] : 30
+            isPlaying: recommendation.activeSounds[sound.id] !== undefined,
+            volume: recommendation.activeSounds[sound.id] !== undefined ? recommendation.activeSounds[sound.id] : 30
           }))
         );
 
@@ -354,7 +300,7 @@ export const CreateScreen: React.FC<CreateScreenProps> = ({
         <div className="flex flex-col gap-1.5">
           <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">空间标签 / 调性</label>
           <div className="flex flex-wrap gap-2">
-            {TAGS.map(tag => (
+            {SCENE_TAGS.map(tag => (
               <button
                 type="button"
                 key={tag}
